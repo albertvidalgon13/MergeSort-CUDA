@@ -22,6 +22,9 @@ void InitV(int N, int *V);
 
 int main(int argc, char** argv)
 {
+    printf("TEST 1\n");
+    printf("TEST 2\n");
+    printf("TEST 3\n");
     unsigned int N;
     unsigned int numBytes;
     unsigned int nBlocks, nThreads;
@@ -47,7 +50,7 @@ int main(int argc, char** argv)
     cudaGetDeviceCount(&count);
     srand(time(NULL));
     gpu = (rand()>>3) % count;
-    cudaSetDevice(1);
+    cudaSetDevice(gpu);
 
     // numero de Threads en cada dimension
     nThreads = SIZE;
@@ -86,9 +89,6 @@ int main(int argc, char** argv)
 
     // Copiar datos desde el host en el device
     cudaMemcpy(d_vector, h_vector, numBytes, cudaMemcpyHostToDevice);
-
-    cudaEventRecord(E1, 0);
-    cudaEventSynchronize(E1);
     
     for(int i=0; i<N; ++i){
         printf("%i", h_vector[i]);
@@ -96,11 +96,27 @@ int main(int argc, char** argv)
     }
     printf("\n");
 
+    cudaEventRecord(E1, 0);
+    cudaEventSynchronize(E1);
+
     // Ejecutar el kernel
     MergeSort<<<dimGrid, dimBlock>>>(N, d_vector);
 
+    cudaEventRecord(E2, 0);
+    cudaEventSynchronize(E2);
+
     // Copiar datos desde el device en el Host
     cudaMemcpy(h_vector, d_vector, numBytes, cudaMemcpyDeviceToHost);
+
+    // Liberar Memoria del device
+    cudaFree(d_vector);
+
+    cudaDeviceSynchronize();
+
+    cudaEventRecord(E3, 0);
+    cudaEventSynchronize(E3);
+
+    cudaEventDestroy(E0); cudaEventDestroy(E1); cudaEventDestroy(E2); cudaEventDestroy(E3);
 
     for(int i=0; i<N; ++i){
         printf("%i", h_vector[i]);
@@ -115,3 +131,4 @@ void InitV(int N, int *V) {
            V[i] = rand(); 
         }       
 }
+

@@ -19,6 +19,6 @@ export PATH=/Soft/cuda/12.2.2/bin:$PATH
 #./kernel4GPUs.exe 4096 N
 #./kernel4GPUs.exe 8192 N
 
-nsys nvprof --print-gpu-trace ./mergesort.exe 20
+# nsys nvprof --print-gpu-trace ./mergesort.exe 20
 
 #nsys nvprof --print-gpu-trace ./kernel4GPUs.exe 1024 N
