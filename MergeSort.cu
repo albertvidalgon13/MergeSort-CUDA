@@ -90,9 +90,9 @@ int main(int argc, char** argv)
     cudaMemcpy(d_vector, h_vector, numBytes, cudaMemcpyHostToDevice);
     cudaMemcpy(dresult_vector, hresult_vector, numBytes, cudaMemcpyHostToDevice);
 
-    int test = N;
+ /*   int test = N;
     while (test > 2) test /=4;
-    if (test == 2) printf("HOLA");
+    if (test == 2) printf("HOLA");*/
     
     printf("El vector SIN ordenar:\n");
     PrintVector(h_vector,N);
@@ -199,9 +199,9 @@ __global__ void MergeSort (int *vector, int *vres, int N, int width, int slices)
         gpu_bottomUpMerge(vector, vres, start, middle, end);
         start += width;
     }
-    int test = N;
+   /* int test = N;
     while (test > 2) test /=4;
-    if (test == 2) gpu_bottomUpMerge(vector, vres, 0, N/2, N);
+    if (test == 2) gpu_bottomUpMerge(vector, vres, 0, N/2, N);*/
 }
 
 
