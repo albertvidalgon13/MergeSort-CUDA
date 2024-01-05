@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
+#g
 #ifndef SIZE
 #define SIZE 64
 #endif
