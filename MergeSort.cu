@@ -3,7 +3,7 @@
 #include <math.h>
 
 #ifndef SIZE
-#define SIZE 64
+#define SIZE 124
 #endif
 
 #ifndef PINNED
@@ -89,9 +89,14 @@ int main(int argc, char** argv)
     // Copiar datos desde el host en el device
     cudaMemcpy(d_vector, h_vector, numBytes, cudaMemcpyHostToDevice);
     cudaMemcpy(dresult_vector, hresult_vector, numBytes, cudaMemcpyHostToDevice);
+
+    int test = N;
+    while (test > 2) test /=4;
+    if (test == 2) printf("HOLA");
     
     printf("El vector SIN ordenar:\n");
     PrintVector(h_vector,N);
+    printf("\n");
 
     cudaEventRecord(E1, 0);
     cudaEventSynchronize(E1);
@@ -100,7 +105,7 @@ int main(int argc, char** argv)
     int* A = d_vector;
     int* B = dresult_vector;
 
-    for (int width = 2; width < (N << 1); width <<= 1){
+    for (int width = 1; width < (N << 1); width <<= 1){
         int slices = N / ((nThreads) * width) + 1;
 
         // Ejecutar el kernel
@@ -194,6 +199,9 @@ __global__ void MergeSort (int *vector, int *vres, int N, int width, int slices)
         gpu_bottomUpMerge(vector, vres, start, middle, end);
         start += width;
     }
+    int test = N;
+    while (test > 2) test /=4;
+    if (test == 2) gpu_bottomUpMerge(vector, vres, 0, N/2, N);
 }
 
 
