@@ -9,4 +9,7 @@ Conceptually, a merge sort works as follows:
   1. Divide the unsorted list into n sublists, each containing one element (a list of one element is considered sorted).
   2. Repeatedly merge sublists to produce new sorted sublists until there is only one sublist remaining. This will be the sorted list.
 
-![Merge Sort Operations](img/merge-2.png)
+<img src="img/merge-2.png" alt="Merge Sort Operations" width="300"/>
+
+Here each thread take one division till there are no threads or no divisions.
+
