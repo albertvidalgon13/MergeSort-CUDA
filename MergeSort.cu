@@ -21,8 +21,8 @@ __device__ void MergeGPU(int* source, int* dest, int start, int middle, int end)
 __global__ void MergeSort (int *vector, int *vres, int N, int width, int slices);
 
 //functions for sequential mergesort
-void MergeSortSequencial(int* arr, int l, int r);
-void MergeSequencial(int arr[], int l, int m, int r);
+void MergeSortSequential(int* arr, int l, int r);
+void MergeSequential(int arr[], int l, int m, int r);
 
 int main(int argc, char** argv)
 {
@@ -132,7 +132,7 @@ int main(int argc, char** argv)
     /* Sequential code starts here*/
 
     int* arr = d_vector;
-    MergeSortSequencial(arr, 0, N-1);
+    MergeSortSequential(arr, 0, N-1);
 
     cudaEventRecord(E4, 0);
     cudaEventSynchronize(E4);
@@ -210,21 +210,21 @@ __global__ void MergeSort(int *vector, int *vres, int N, int width, int slices) 
 
 /*-------------------------*/
 /* Sequential functions*/
-void MergeSortSequencial(int* arr, int l, int r) {
+void MergeSortSequential(int* arr, int l, int r) {
     if (l < r) {
         // Encuentra el punto medio del arreglo
         int m = l + (r - l) / 2;
 
         // Ordena la primera y segunda mitad
-        MergeSortSequencial(arr, l, m);
-        MergeSortSequencial(arr, m + 1, r);
+        MergeSortSequential(arr, l, m);
+        MergeSortSequential(arr, m + 1, r);
 
         // Combina las mitades ordenadas
-        MergeSequencial(arr, l, m, r);
+        MergeSequential(arr, l, m, r);
     }
 }
 
-void MergeSequencial(int arr[], int l, int m, int r) {
+void MergeSequential(int arr[], int l, int m, int r) {
     int i, j, k;
     int n1 = m - l + 1;
     int n2 = r - m;
