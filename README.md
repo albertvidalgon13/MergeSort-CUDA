@@ -13,3 +13,5 @@ Conceptually, a merge sort works as follows:
 
 Here each thread take one division till there are no threads or no divisions.
 
+Please note that MakeFile and Job.sh may only work on my server, to reproduce you should make your own compilation files.
+
