@@ -186,8 +186,11 @@ int main(int argc, char** argv)
         // Kernel exec
         MergeSort<<<dimGrid, dimBlock>>>(A, B, N, width, slices);
 
-        A = A == d_vector ? dresult_vector : d_vector;
-        B = B == d_vector ? dresult_vector : d_vector;
+        if (A == d_vector) A = dresult_vector;
+        else A = d_vector;
+
+        if (B == d_vector) B = dresult_vector;
+        else B = d_vector;
     }
 
     cudaEventRecord(E2, 0);
