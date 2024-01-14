@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <sys/times.h>
+#include <sys/resource.h>
 
 #ifndef SIZE
 #define SIZE 124
@@ -20,9 +22,83 @@ void PrintVector(int* x, unsigned int size);
 __device__ void MergeGPU(int* source, int* dest, int start, int middle, int end);
 __global__ void MergeSort (int *vector, int *vres, int N, int width, int slices);
 
-//functions for sequential mergesort
-void MergeSortSequential(int* arr, int l, int r);
-void MergeSequential(int arr[], int l, int m, int r);
+float GetTime(void);
+
+/*-------------------------*/
+/* Sequential functions*/
+
+void MergeSequential(int *array, int p, int q, int r) {
+    // Variable declaration
+    int i, j, k;
+    int n_1 = (q - p) + 1;
+    int n_2 = (r - q);
+    int *L, *R;
+
+    // Mem assign
+    L = (int*)malloc(n_1 * sizeof(int));
+    R = (int*)malloc(n_2 * sizeof(int));
+
+    // data copy
+    for (i = 0; i < n_1; i++)
+    {
+        L[i] = *(array + p + i);
+    }
+
+    for (j = 0; j < n_2; j++)
+    {
+        R[j] = *(array + q + j + 1);
+    }
+
+    i = 0;
+    j = 0;
+
+    // data fusion
+    for (k = p; k < r + 1; k++)
+    {
+        if (i == n_1)
+        {
+            *(array + k) = *(R + j);
+            j =  j+ 1;
+        }
+        else if(j == n_2)
+        {
+            *(array + k) = *(L + i);
+            i = i + 1;
+        }
+        else
+        {
+            if (*(L + i) <= *(R + j))
+            {
+                *(array + k) = *(L + i);
+                i = i + 1;
+            }
+            else
+            {
+                *(array + k) = *(R + j);
+                j = j + 1;
+            }
+        }
+    }
+}
+
+
+void MergeSortSequential(int* array, int p, int r) {
+    if (p < r)
+    {
+        // divide problem
+        int q = (p + r)/2;
+        
+        // recursive for trivial solution
+        MergeSortSequential(array, p, q);
+        MergeSortSequential(array, q + 1, r);
+        
+        // fusion of partial divisions
+        MergeSequential(array, p, q, r);
+    }
+}
+
+
+//-----------------------------
 
 int main(int argc, char** argv)
 {
@@ -31,10 +107,11 @@ int main(int argc, char** argv)
     unsigned int nBlocks, nThreads;
 
     //float TotalTime, KernelTime;
-    cudaEvent_t E0, E1, E2, E3, E4;
-    float TotalTime, KernelTime, SeqTime;
+    cudaEvent_t E0, E1, E2, E3;
+    float TotalTime, KernelTime;
     int *h_vector;
     int *d_vector;
+    float t1,t2;
 
     int *hresult_vector;
     int *dresult_vector;
@@ -67,7 +144,6 @@ int main(int argc, char** argv)
     cudaEventCreate(&E1);
     cudaEventCreate(&E2);
     cudaEventCreate(&E3);
-    cudaEventCreate(&E4);
 
     if (PINNED) {
         // obtains [pinned] memory in host
@@ -121,6 +197,9 @@ int main(int argc, char** argv)
     cudaMemcpy(h_vector, d_vector, numBytes, cudaMemcpyDeviceToHost);
     cudaMemcpy(hresult_vector, dresult_vector, numBytes, cudaMemcpyDeviceToHost);
 
+    printf("El vector ordenado:\n");
+    PrintVector(hresult_vector, N);
+
     // Unlock Device Memory
     cudaFree(d_vector);
     
@@ -128,26 +207,23 @@ int main(int argc, char** argv)
 
     cudaEventRecord(E3, 0);
     cudaEventSynchronize(E3);
+    
+    cudaEventElapsedTime(&TotalTime, E0, E3);
+    cudaEventElapsedTime(&KernelTime, E1, E2);
+
+    cudaEventDestroy(E0); cudaEventDestroy(E1); cudaEventDestroy(E2); cudaEventDestroy(E3);
+
     /*----------------------------*/
     /* Sequential code starts here*/
 
-    int* arr = d_vector;
-    MergeSortSequential(arr, 0, N-1);
-
-    cudaEventRecord(E4, 0);
-    cudaEventSynchronize(E4);
+    t1=GetTime();
+    int* arr = h_vector;
+    int r = sizeof(arr)/sizeof(arr[0]) - 1, p = 0;
+    MergeSortSequential(arr, p, r);
+    t2=GetTime();
 
     /* Sequential code ends here*/
     /*----------------------------*/
-
-    cudaEventElapsedTime(&TotalTime, E0, E3);
-    cudaEventElapsedTime(&KernelTime, E1, E2);
-    cudaEventElapsedTime(&SeqTime, E3, E4);
-
-    cudaEventDestroy(E0); cudaEventDestroy(E1); cudaEventDestroy(E2); cudaEventDestroy(E3); cudaEventDestroy(E4);
-
-    printf("El vector ordenado:\n");
-    PrintVector(hresult_vector, N);
 
     printf("\n");
 
@@ -156,10 +232,10 @@ int main(int argc, char** argv)
     printf("nBlocks: %d\n", nBlocks);
     printf("Global Parallel Time: %4.6f milseg\n", TotalTime);
     printf("Kernel Parallel Time: %4.6f milseg\n", KernelTime);
-    printf("Sequential time: %4.6f milseg\n", KernelTime);
+    printf("Sequential time: %4.6f milseg\n", t2-t1);
     printf("Global Parallel Performance: %4.2f GFLOPS\n", ((float) 5*N) / (1000000.0 * TotalTime));
     printf("Kernel Parallel Performance: %4.2f GFLOPS\n", ((float) 5*N) / (1000000.0 * KernelTime));
-    printf("Sequential Performance: %4.2f GFLOPS\n", ((float) 5*N) / (1000000.0 * SeqTime));
+    printf("Sequential Performance: %4.2f GFLOPS\n", ((float) 5*N) / (1000000.0 * (t2-t1)));
 }
 
 // Inicialice N elements vector
@@ -209,64 +285,12 @@ __global__ void MergeSort(int *vector, int *vres, int N, int width, int slices) 
 }
 
 /*-------------------------*/
-/* Sequential functions*/
-void MergeSortSequential(int* arr, int l, int r) {
-    if (l < r) {
-        // Encuentra el punto medio del arreglo
-        int m = l + (r - l) / 2;
 
-        // Ordena la primera y segunda mitad
-        MergeSortSequential(arr, l, m);
-        MergeSortSequential(arr, m + 1, r);
-
-        // Combina las mitades ordenadas
-        MergeSequential(arr, l, m, r);
-    }
+float GetTime(void)        {
+  struct timeval tim;
+  struct rusage ru;
+  getrusage(RUSAGE_SELF, &ru);
+  tim=ru.ru_utime;
+  return ((double)tim.tv_sec + (double)tim.tv_usec / 1000000.0)*1000.0;
 }
-
-void MergeSequential(int arr[], int l, int m, int r) {
-    int i, j, k;
-    int n1 = m - l + 1;
-    int n2 = r - m;
-
-    // Crear subarreglos temporales
-    int L[n1], R[n2];
-
-    // Copiar datos a los subarreglos temporales L[] y R[]
-    for (i = 0; i < n1; i++)
-        L[i] = arr[l + i];
-    for (j = 0; j < n2; j++)
-        R[j] = arr[m + 1 + j];
-
-    // Combinar los subarreglos temporales de nuevo en arr[l..r]
-    i = 0;
-    j = 0;
-    k = l;
-    while (i < n1 && j < n2) {
-        if (L[i] <= R[j]) {
-            arr[k] = L[i];
-            i++;
-        } else {
-            arr[k] = R[j];
-            j++;
-        }
-        k++;
-    }
-
-    // Copiar los elementos restantes de L[], si los hay
-    while (i < n1) {
-        arr[k] = L[i];
-        i++;
-        k++;
-    }
-
-    // Copiar los elementos restantes de R[], si los hay
-    while (j < n2) {
-        arr[k] = R[j];
-        j++;
-        k++;
-    }
-}
-/*-------------------------*/
-
 
