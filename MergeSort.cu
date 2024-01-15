@@ -19,7 +19,7 @@ void InitVector(int N, int *V);
 void PrintVector(int* x, unsigned int size);
 
 //funcions for parallel mergesort 
-__device__ void MergeGPU(int* source, int* dest, int start, int middle, int end);
+__device__ void Merge(int* source, int* dest, int start, int middle, int end);
 __global__ void MergeSort (int *vector, int *vres, int N, int width, int slices);
 
 float GetTime(void);
@@ -259,14 +259,15 @@ void PrintVector(int* list, unsigned int size){
 }
 
 /* Parallel functions*/
-__device__ void MergeGPU(int* source, int* dest, int start, int middle, int end) {
+__device__ void Merge(int* source, int* dest, int start, int middle, int end) {
     int i = start;
     int j = middle;
     for (int k = start; k < end; k++) {
         if (i < middle && (j >= end || source[i] < source[j])) {
             dest[k] = source[i];
             i++;
-        } else {
+        } 
+        else {
             dest[k] = source[j];
             j++;
         }
@@ -282,7 +283,7 @@ __global__ void MergeSort(int *vector, int *vres, int N, int width, int slices) 
         if (start >= N) break;
         middle = min(start + (width >> 1), N);
         end = min(start + width, N);
-        MergeGPU(vector, vres, start, middle, end);
+        Merge(vector, vres, start, middle, end);
         start += width;
     }
 }
